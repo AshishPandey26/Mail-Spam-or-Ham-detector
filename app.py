@@ -1,37 +1,30 @@
-from flask import Flask ,render_template ,url_for,request# type: ignore
+from flask import Flask, render_template, url_for, request
 import joblib
+
+
 model = joblib.load('BNB_MODEL.lb')
-countvectorizer =  joblib.load('countvectorizer.lb')
+countvectorizer = joblib.load('CountVectorizer.lb')
 
 app = Flask(__name__)
 
-
 @app.route('/')
 def home():
-  return render_template('index.html')
+    return render_template('index.html')
 
-@app.route('/predict',methods=['GET','POST'])
+@app.route('/predict', methods=['GET', 'POST'])
 def predict():
-  if request.method == 'POST':
-    email_message = str(request.form['email_message'])
+    if request.method == 'POST':
+        email_message = request.form['email_message']
+        email = [email_message]
+        transformed_email = countvectorizer.transform(email)
+        prediction = model.predict(transformed_email)[0]
+        
+        label = "Ham" if prediction == 0 else "Spam"
 
-    email = [email_message]
+        with open('email.txt', 'a') as file:
+            file.write(f"{label}\t{email_message}\n")
+        
+        return label  
 
-    transformed_email = countvectorizer.transform(email)
-
-    print(transformed_email.shape)
-    
-    prediction = str(model.predict(transformed_email)[0])
-    print(prediction)
-    # dt = {'0': 'ham', '1': 'spam'}
-    if prediction ==0 :
-        return "ham"
-    else:
-        return "spam"
-    
-    # return prediction
-
-
-
-if __name__== "__main__":
-  app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
